@@ -11,7 +11,8 @@
         "**/node_modules": true,
         "out/": true
     },
-   
-    "tslint.rulesDirectory": "node_modules/tslint-microsoft-contrib",
+
+    "tslint.enable": true,
+    "tslint.rulesDirectory": "./node_modules/tslint-microsoft-contrib",
     "typescript.tsdk": "./node_modules/typescript/lib"
 }
