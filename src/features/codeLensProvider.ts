@@ -5,12 +5,12 @@
 
 'use strict';
 
-import {CancellationToken, CodeLens, Range, Uri, TextDocument, CodeLensProvider} from 'vscode';
-import {toRange, toLocation} from '../omnisharp/typeConvertion';
+import { CancellationToken, CodeLens, Range, Uri, TextDocument, CodeLensProvider } from 'vscode';
+import { toRange, toLocation } from '../omnisharp/typeConvertion';
 import AbstractSupport from './abstractProvider';
-import {updateCodeLensForTest} from './testSupport';
 import * as protocol from '../omnisharp/protocol';
 import * as serverUtils from '../omnisharp/utils';
+import * as vscode from 'vscode';
 
 class OmniSharpCodeLens extends CodeLens {
 
@@ -52,7 +52,36 @@ export default class OmniSharpCodeLensProvider extends AbstractSupport implement
             this._convertQuickFix(bucket, fileName, child);
         }
 
-        updateCodeLensForTest(bucket, fileName, node, this._server.isDebugEnable());
+        this._updateCodeLensForTest(bucket, fileName, node, this._server.isDebugEnable());
+    }
+
+    private _updateCodeLensForTest(bucket: vscode.CodeLens[], fileName: string, node: protocol.Node, isDebugEnable: boolean) {
+        // backward compatible check: Features property doesn't present on older version OmniSharp
+        if (node.Features === undefined) {
+            return;
+        }
+
+        let testFeature = node.Features.find(value => (value.Name == 'XunitTestMethod' || value.Name == 'NUnitTestMethod' || value.Name == 'MSTestMethod'));
+        if (testFeature) {
+            // this test method has a test feature
+            let testFrameworkName = 'xunit';
+            if (testFeature.Name == 'NunitTestMethod') {
+                testFrameworkName = 'nunit';
+            }
+            else if (testFeature.Name == 'MSTestMethod') {
+                testFrameworkName = 'mstest';
+            }
+
+            bucket.push(new vscode.CodeLens(
+                toRange(node.Location),
+                { title: "run test", command: 'dotnet.test.run', arguments: [testFeature.Data, fileName, testFrameworkName] }));
+
+            if (isDebugEnable) {
+                bucket.push(new vscode.CodeLens(
+                    toRange(node.Location),
+                    { title: "debug test", command: 'dotnet.test.debug', arguments: [testFeature.Data, fileName, testFrameworkName] }));
+            }
+        }
     }
 
     resolveCodeLens(codeLens: CodeLens, token: CancellationToken): Thenable<CodeLens> {

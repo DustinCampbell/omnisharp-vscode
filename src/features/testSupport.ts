@@ -6,10 +6,9 @@
 import { DebugEventListener } from './debugEventListener';
 import { Logger } from '../logger';
 import { OmniSharpServer } from '../omnisharp/server';
-import { toRange } from '../omnisharp/typeConvertion';
-import * as vscode from 'vscode';
-import * as serverUtils from "../omnisharp/utils";
 import * as protocol from '../omnisharp/protocol';
+import * as serverUtils from "../omnisharp/utils";
+import * as vscode from 'vscode';
 
 export class TestRunner {
     private _server: OmniSharpServer;
@@ -205,33 +204,4 @@ export function registerDotNetTestDebugCommand(testRunner: TestRunner): vscode.D
     return vscode.commands.registerCommand(
         'dotnet.test.debug',
         (testMethod, fileName, testFrameworkName) => testRunner.debugTest(testMethod, fileName, testFrameworkName));
-}
-
-export function updateCodeLensForTest(bucket: vscode.CodeLens[], fileName: string, node: protocol.Node, isDebugEnable: boolean) {
-    // backward compatible check: Features property doesn't present on older version OmniSharp
-    if (node.Features === undefined) {
-        return;
-    }
-
-    let testFeature = node.Features.find(value => (value.Name == 'XunitTestMethod' || value.Name == 'NUnitTestMethod' || value.Name == 'MSTestMethod'));
-    if (testFeature) {
-        // this test method has a test feature
-        let testFrameworkName = 'xunit';
-        if (testFeature.Name == 'NunitTestMethod') {
-            testFrameworkName = 'nunit';
-        }
-        else if (testFeature.Name == 'MSTestMethod') {
-            testFrameworkName = 'mstest';
-        }
-
-        bucket.push(new vscode.CodeLens(
-            toRange(node.Location),
-            { title: "run test", command: 'dotnet.test.run', arguments: [testFeature.Data, fileName, testFrameworkName] }));
-
-        if (isDebugEnable) {
-            bucket.push(new vscode.CodeLens(
-                toRange(node.Location),
-                { title: "debug test", command: 'dotnet.test.debug', arguments: [testFeature.Data, fileName, testFrameworkName] }));
-        }
-    }
 }
