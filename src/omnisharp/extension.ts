@@ -25,6 +25,7 @@ import registerCommands from '../features/commands';
 import forwardChanges from '../features/changeForwarding';
 import reportStatus from '../features/status';
 import { OmniSharpServer } from './server';
+import { TestRunner } from '../features/dotnetTest';
 import { Options } from './options';
 import { addAssetsIfNecessary, AddAssetResult } from '../assets';
 import { sum, safeLength } from '../common';
@@ -38,6 +39,8 @@ export function activate(context: vscode.ExtensionContext, reporter: TelemetryRe
 
     const server = new OmniSharpServer(reporter);
     const advisor = new Advisor(server); // create before server is started
+    const testRunner = new TestRunner(server);
+
     const disposables: vscode.Disposable[] = [];
     const localDisposables: vscode.Disposable[] = [];
 
@@ -72,7 +75,7 @@ export function activate(context: vscode.ExtensionContext, reporter: TelemetryRe
         vscode.Disposable.from(...localDisposables).dispose();
     }));
 
-    disposables.push(registerCommands(server, context.extensionPath));
+    disposables.push(registerCommands(server, testRunner, context.extensionPath));
     disposables.push(reportStatus(server));
 
     if (!context.workspaceState.get<boolean>('assetPromptDisabled')) {
