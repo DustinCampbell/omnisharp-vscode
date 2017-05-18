@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DebuggerEventsProtocol } from '../coreclr-debug/debuggerEventsProtocol';
 import { Logger } from '../logger';
 import { OmniSharpServer } from '../omnisharp/server';
+import * as debuggerEvents from '../coreclr-debug/debuggerEventsProtocol';
 import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
@@ -49,9 +49,9 @@ export class DebugEventListener {
 
         this._serverSocket = net.createServer((socket: net.Socket) => {
             socket.on('data', (buffer: Buffer) => {
-                let event: DebuggerEventsProtocol.DebuggerEvent;
+                let event: debuggerEvents.DebuggerEvent;
                 try {
-                    event = DebuggerEventsProtocol.decodePacket(buffer);
+                    event = debuggerEvents.decodePacket(buffer);
                 }
                 catch (e) {
                     this._logger.appendLine('Warning: Invalid event received from debugger');
@@ -59,13 +59,13 @@ export class DebugEventListener {
                 }
 
                 switch (event.eventType) {
-                    case DebuggerEventsProtocol.EventType.ProcessLaunched:
-                        let processLaunchedEvent = <DebuggerEventsProtocol.ProcessLaunchedEvent>(event);
+                    case debuggerEvents.EventType.ProcessLaunched:
+                        let processLaunchedEvent = <debuggerEvents.ProcessLaunchedEvent>(event);
                         this._logger.appendLine(`Started debugging process #${processLaunchedEvent.targetProcessId}.`);
                         this.onProcessLaunched(processLaunchedEvent.targetProcessId);
                         break;
 
-                    case DebuggerEventsProtocol.EventType.DebuggingStopped:
+                    case debuggerEvents.EventType.DebuggingStopped:
                         this._logger.appendLine('Debugging complete.');
                         this._logger.appendLine();
                         this.onDebuggingStopped();
