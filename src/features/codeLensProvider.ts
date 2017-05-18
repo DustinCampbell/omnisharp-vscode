@@ -8,7 +8,7 @@
 import {CancellationToken, CodeLens, Range, Uri, TextDocument, CodeLensProvider} from 'vscode';
 import {toRange, toLocation} from '../omnisharp/typeConvertion';
 import AbstractSupport from './abstractProvider';
-import {updateCodeLensForTest} from './dotnetTest';
+import {updateCodeLensForTest} from './testSupport';
 import * as protocol from '../omnisharp/protocol';
 import * as serverUtils from '../omnisharp/utils';
 

@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as protocol from '../omnisharp/protocol';
 import * as vscode from 'vscode';
-import * as dotnetTest from './dotnetTest';
+import * as dotnetTest from './testSupport';
 import { DotNetAttachItemsProviderFactory, AttachPicker, RemoteAttachPicker } from './processPicker';
 import { generateAssets } from '../assets';
 

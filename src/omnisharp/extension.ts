@@ -25,7 +25,7 @@ import registerCommands from '../features/commands';
 import forwardChanges from '../features/changeForwarding';
 import reportStatus from '../features/status';
 import { OmniSharpServer } from './server';
-import { TestRunner } from '../features/dotnetTest';
+import { TestRunner } from '../features/testSupport';
 import { Options } from './options';
 import { addAssetsIfNecessary, AddAssetResult } from '../assets';
 import { sum, safeLength } from '../common';
