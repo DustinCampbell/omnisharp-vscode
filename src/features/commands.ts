@@ -6,6 +6,7 @@
 'use strict';
 
 import { OmniSharpServer } from '../omnisharp/server';
+import { TestRunner } from './testSupport';
 import * as serverUtils from '../omnisharp/utils';
 import { findLaunchTargets } from '../omnisharp/launcher';
 import * as cp from 'child_process';
@@ -13,13 +14,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as protocol from '../omnisharp/protocol';
 import * as vscode from 'vscode';
-import * as dotnetTest from './testSupport';
 import { DotNetAttachItemsProviderFactory, AttachPicker, RemoteAttachPicker } from './processPicker';
 import { generateAssets } from '../assets';
 
 let channel = vscode.window.createOutputChannel('.NET');
 
-export default function registerCommands(server: OmniSharpServer, testRunner: dotnetTest.TestRunner, extensionPath: string) {
+export default function registerCommands(server: OmniSharpServer, testRunner: TestRunner, extensionPath: string) {
     let d1 = vscode.commands.registerCommand('o.restart', () => restartOmniSharp(server));
     let d2 = vscode.commands.registerCommand('o.pickProjectAndStart', () => pickProjectAndStart(server));
     let d3 = vscode.commands.registerCommand('o.showOutput', () => server.getChannel().show(vscode.ViewColumn.Three));
@@ -30,8 +30,10 @@ export default function registerCommands(server: OmniSharpServer, testRunner: do
     let d5 = vscode.commands.registerCommand('csharp.downloadDebugger', () => { });
 
     // register two commands for running and debugging tests
-    let d6 = dotnetTest.registerDotNetTestRunCommand(testRunner);
-    let d7 = dotnetTest.registerDotNetTestDebugCommand(testRunner);
+    let d6 = vscode.commands.registerCommand('dotnet.test.run',
+        (testMethod, fileName, testFrameworkName) => testRunner.runTest(testMethod, fileName, testFrameworkName));
+    let d7 = vscode.commands.registerCommand('dotnet.test.debug',
+        (testMethod, fileName, testFrameworkName) => testRunner.debugTest(testMethod, fileName, testFrameworkName));
 
     // register process picker for attach
     let attachItemsProvider = DotNetAttachItemsProviderFactory.Get();

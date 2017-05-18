@@ -14,6 +14,7 @@ export class TestRunner {
     private _server: OmniSharpServer;
     private _channel: vscode.OutputChannel;
     private _logger: Logger;
+    private _isBusy: boolean = false;
 
     constructor(server: OmniSharpServer) {
         this._server = server;
@@ -161,27 +162,53 @@ export class TestRunner {
             FileName: fileName
         };
 
-        serverUtils.debugTestStop(this._server, request);
+        serverUtils.debugTestStop(this._server, request)
+            .then(_ => {
+                this._isBusy = false;
+            });
+    }
+
+    public isBusy(): boolean {
+        return this._isBusy;
     }
 
     public runTest(testMethod: string, fileName: string, testFrameworkName: string) {
+        if (this._isBusy) {
+            vscode.window.showErrorMessage('Test runner is busy.');
+            return;
+        }
+
+        this._isBusy = true;
+
         this._showChannel();
         this._logger.appendLine(`Running test ${testMethod}...`);
         this._logger.appendLine();
 
         const listener = this._subscribeToTestMessages();
 
+        function cleanUp() {
+            listener.dispose();
+            this._isBusy = false;
+        }
+
         this._saveDirtyFiles()
             .then(_ => this._runTest(fileName, testMethod, testFrameworkName))
             .then(results => this._reportResults(results))
-            .then(() => listener.dispose())
+            .then(() => cleanUp())
             .catch(reason => {
-                listener.dispose();
+                cleanUp();
                 vscode.window.showErrorMessage(`Failed to run test because ${reason}.`);
             });
     }
 
     public debugTest(testMethod: string, fileName: string, testFrameworkName: string) {
+        if (this._isBusy) {
+            vscode.window.showErrorMessage('Test runner is busy.');
+            return;
+        }
+
+        this._isBusy = true;
+
         this._showChannel();
         this._logger.appendLine(`Debugging method '${testMethod}'...`);
         this._logger.appendLine();
@@ -218,16 +245,4 @@ export class TestRunner {
                 }
             });
     }
-}
-
-export function registerDotNetTestRunCommand(testRunner: TestRunner): vscode.Disposable {
-    return vscode.commands.registerCommand(
-        'dotnet.test.run',
-        (testMethod, fileName, testFrameworkName) => testRunner.runTest(testMethod, fileName, testFrameworkName));
-}
-
-export function registerDotNetTestDebugCommand(testRunner: TestRunner): vscode.Disposable {
-    return vscode.commands.registerCommand(
-        'dotnet.test.debug',
-        (testMethod, fileName, testFrameworkName) => testRunner.debugTest(testMethod, fileName, testFrameworkName));
 }
