@@ -142,6 +142,28 @@ export class TestRunner {
         }
     }
 
+    private _onProcessLaunched(processId: number, fileName: string) {
+        let request: protocol.V2.DebugTestLaunchRequest = {
+            FileName: fileName,
+            TargetProcessId: processId
+        };
+
+        const listener = this._subscribeToTestMessages();
+
+        serverUtils.debugTestLaunch(this._server, request)
+            .then(_ => {
+                listener.dispose();
+            });
+    }
+
+    private _onDebuggingStopped(fileName: string) {
+        let request: protocol.V2.DebugTestStopRequest = {
+            FileName: fileName
+        };
+
+        serverUtils.debugTestStop(this._server, request);
+    }
+
     public runTest(testMethod: string, fileName: string, testFrameworkName: string) {
         this._showChannel();
         this._logger.appendLine(`Running test ${testMethod}...`);
@@ -165,7 +187,7 @@ export class TestRunner {
         this._logger.appendLine();
 
         let debugType: string;
-        let debugEventListener: DebugEventListener = null;
+        let debugListener: DebugEventListener = null;
 
         return this._saveDirtyFiles()
             .then(_ => serverUtils.requestProjectInformation(this._server, { FileName: fileName }))
@@ -176,19 +198,23 @@ export class TestRunner {
                 }
                 else if (projectInfo.MsBuildProject) {
                     debugType = 'vstest';
-                    debugEventListener = new DebugEventListener(fileName, this._server, this._logger);
-                    return debugEventListener.start();
+
+                    debugListener = new DebugEventListener(this._logger);
+                    debugListener.onProcessLaunched(processId => this._onProcessLaunched(processId, fileName));
+                    debugListener.onDebuggingStopped(() => this._onDebuggingStopped(fileName));
+
+                    return debugListener.start();
                 }
                 else {
                     throw new Error('Expected project.json or .csproj project.');
                 }
             })
-            .then(() => this._getLaunchConfiguration(debugType, fileName, testMethod, testFrameworkName, debugEventListener))
+            .then(() => this._getLaunchConfiguration(debugType, fileName, testMethod, testFrameworkName, debugListener))
             .then(config => vscode.commands.executeCommand('vscode.startDebug', config))
             .catch(reason => {
                 vscode.window.showErrorMessage(`Failed to start debugger: ${reason}`);
-                if (debugEventListener != null) {
-                    debugEventListener.close();
+                if (debugListener != null) {
+                    debugListener.close();
                 }
             });
     }
