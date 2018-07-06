@@ -91,9 +91,9 @@ export class OmniSharpServer {
     private updateProjectDebouncer = new Subject<ObservableEvents.ProjectModified>();
     private firstUpdateProject: boolean;
 
-    constructor(private vscode: vscode, networkSettingsProvider: NetworkSettingsProvider, private packageJSON: any, private platformInfo: PlatformInformation, private eventStream: EventStream, private optionProvider: OptionProvider) {
+    constructor(private vscode: vscode, networkSettingsProvider: NetworkSettingsProvider, private packageJSON: any, private platformInfo: PlatformInformation, private eventStream: EventStream, private optionProvider: OptionProvider, extensionPath: string) {
         this._requestQueue = new RequestQueueCollection(this.eventStream, 8, request => this._makeRequest(request));
-        let downloader = new OmnisharpDownloader(networkSettingsProvider, this.eventStream, this.packageJSON, platformInfo);
+        let downloader = new OmnisharpDownloader(networkSettingsProvider, this.eventStream, this.packageJSON, platformInfo, extensionPath);
         this._omnisharpManager = new OmnisharpManager(downloader, platformInfo);
         this.updateProjectDebouncer.debounceTime(1500).subscribe((event) => { this.updateProjectInfo(); });
         this.firstUpdateProject = true;
@@ -443,6 +443,14 @@ export class OmniSharpServer {
                     // 2nd try again
                     return this.autoStart(preferredPath);
                 });
+            }
+
+            const defaultLaunchSolutionConfigValue = this.optionProvider.GetLatestOptions().defaultLaunchSolution;
+
+            // First, try to launch against something that matches the user's preferred target
+            const defaultLaunchSolutionTarget = launchTargets.find((a) => (path.basename(a.target) === defaultLaunchSolutionConfigValue));
+            if (defaultLaunchSolutionTarget) {
+                return this.restart(defaultLaunchSolutionTarget);
             }
 
             // If there's more than one launch target, we start the server if one of the targets
