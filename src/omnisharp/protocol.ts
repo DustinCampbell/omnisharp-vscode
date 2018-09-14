@@ -458,6 +458,7 @@ export namespace V2 {
         export const DebugTestStop = '/v2/debugtest/stop';
         export const BlockStructure = '/v2/blockstructure';
         export const CodeStructure = '/v2/codestructure';
+        export const QuickInfo = '/v2/quickinfo';
     }
 
     export interface Point {
@@ -709,6 +710,23 @@ export namespace V2 {
             }
 
             walker(elements);
+        }
+    }
+    
+    export namespace QuickInfo {
+        export interface QuickInfoSection {
+            Kind: string;
+            Text: string;
+        }
+
+        export interface QuickInfoRequest extends FileBasedRequest {
+            Line: number;
+            Column: number;
+        }
+
+        export interface QuickInfoResponse {
+            Sections: QuickInfoSection[];
+            Tags: string[];
         }
     }
 }
